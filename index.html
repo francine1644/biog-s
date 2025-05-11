@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Modelagem Preditiva - Produção de Biogás</title>
+<style>
+  /* Reset */
+  * {
+    box-sizing: border-box;
+  }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    background: linear-gradient(135deg, #006400, #228B22);
+    color: #f0f0f0;
+    height: 100%;
+    max-height: 600px;
+    overflow: hidden;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  header h1 {
+    font-size: 1.6rem;
+    color: #fffacd;
+    text-shadow: 0 0 8px #7fff00;
+    margin-bottom: 0.1rem;
+  }
+  header p {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #d0f0c0;
+  }
+  form {
+    background: rgba(34, 139, 34, 0.8);
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 0 12px #7fff00aa;
+    width: 100%;
+    max-width: 350px;
+  }
+  label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+  input[type="number"] {
+    width: 100%;
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: none;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    outline: none;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  button {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 12px;
+    border: none;
+    background-color: #9acd32;
+    color: #003300;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background-color: #7bbf00;
+  }
+  .result {
+    margin-top: 1rem;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 1rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #e0ffe0;
+    text-align: center;
+    box-shadow: 0 0 10px #7fff0077;
+  }
+  footer {
+    margin-top: auto;
+    font-size: 0.8rem;
+    color: #a0d0a0;
+    text-align: center;
+  }
+  /* Responsive text size */
+  @media (max-width: 400px) {
+    header h1 {
+      font-size: 1.3rem;
+    }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Modelagem Preditiva - Produção de Biogás</h1>
+  <p>Insira os parâmetros para estimar a produção de biogás (m³)</p>
+</header>
+<form id="predictForm" aria-label="Formulário de parâmetros para previsão de produção de biogás">
+  <label for="organicMatter">Matéria Orgânica (%):</label>
+  <input type="number" id="organicMatter" name="organicMatter" min="0" max="100" step="0.1" required aria-required="true" placeholder="Ex: 60" />
+
+  <label for="temperature">Temperatura (°C):</label>
+  <input type="number" id="temperature" name="temperature" min="10" max="70" step="0.1" required aria-required="true" placeholder="Entre 20 e 60" />
+
+  <label for="ph">pH:</label>
+  <input type="number" id="ph" name="ph" min="5" max="9" step="0.1" required aria-required="true" placeholder="Entre 6 e 8" />
+
+  <label for="retentionTime">Tempo de Retenção (dias):</label>
+  <input type="number" id="retentionTime" name="retentionTime" min="1" max="50" step="0.1" required aria-required="true" placeholder="Ex: 30" />
+
+  <button type="submit">Calcular Produção Estimada</button>
+</form>
+<div id="result" class="result" aria-live="polite" role="region" style="display:none;"></div>
+<footer>
+  &copy; 2024 Sistema Preditivo de Biogás
+</footer>
+<script>
+  // Simple predictive function simulating biogas production (m³)
+  // Using a made-up formula weighted by factors known to affect biogas production
+  // The formula assumes:
+  // - Higher organic matter % increases production
+  // - Ideal temperature near 37°C (mesophilic), with drop outside range
+  // - pH near neutral (7) ideal
+  // - Longer retention time increases production up to a limit
+
+  function predictiveBiogasProduction(organicMatter, temperature, ph, retentionTime) {
+    // Normalize organic matter (0-100%) factor
+    let omFactor = organicMatter / 100;
+
+    // Temperature effect: peak at 37°C. Gaussian style drop-off.
+    let tempFactor = Math.exp(-Math.pow((temperature - 37)/10, 2));
+
+    // pH effect: ideal at 7.
+    let phFactor = Math.exp(-Math.pow((ph - 7)/1, 2));
+
+    // Retention time effect, increases production up to 30 days then plateaus
+    let rtFactor = Math.min(retentionTime / 30, 1);
+
+    // Base production constant (arbitrary scale, e.g. m³ / kg input)
+    let baseProduction = 20;
+
+    // Calculate production estimate
+    let production = baseProduction * omFactor * tempFactor * phFactor * rtFactor;
+
+    // Clamp to minimum zero
+    return production < 0 ? 0 : production;
+  }
+
+  document.getElementById('predictForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const organicMatter = parseFloat(e.target.organicMatter.value);
+    const temperature = parseFloat(e.target.temperature.value);
+    const ph = parseFloat(e.target.ph.value);
+    const retentionTime = parseFloat(e.target.retentionTime.value);
+
+    // Simple input validation range
+    if (
+      organicMatter < 0 || organicMatter > 100 ||
+      temperature < 10 || temperature > 70 ||
+      ph < 5 || ph > 9 ||
+      retentionTime < 1 || retentionTime > 50
+    ) {
+      alert('Por favor, insira valores válidos dentro dos intervalos indicados.');
+      return;
+    }
+
+    const estimatedProduction = predictiveBiogasProduction(organicMatter, temperature, ph, retentionTime);
+
+    const resultDiv = document.getElementById('result');
+    resultDiv.style.display = 'block';
+    resultDiv.textContent = `Produção estimada de biogás: ${estimatedProduction.toFixed(2)} m³ por unidade de tratamento.`;
+  });
+</script>
+</body>
+</html>
+
